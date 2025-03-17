@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة العملاء</title>
+    <style>
+        body { font-family: Arial, sans-serif; direction: rtl; }
+        .container { width: 50%; margin: auto; }
+        input, button { margin: 5px; padding: 10px; }
+        .customer-list div { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 5px; border: 1px solid #ccc; margin-top: 5px; }
+        .customer-list div:hover { background-color: #f0f0f0; }
+        .delete-btn { background: none; border: none; cursor: pointer; color: red; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>إضافة عميل</h2>
+        <input type="text" id="customerName" placeholder="أدخل اسم العميل">
+        <button onclick="addCustomer()">إضافة</button>
+        <input type="text" id="searchBox" placeholder="بحث عن عميل" oninput="searchCustomer()">
+        <h3>قائمة العملاء</h3>
+        <div class="customer-list" id="customerList"></div>
+        <h3>تفاصيل العميل</h3>
+        <div id="customerDetails"></div>
+        <button onclick="closeDetails()">إغلاق</button>
+    </div>
+
+    <script>
+        let customers = JSON.parse(localStorage.getItem('customers')) || [];
+
+        function addCustomer() {
+            let name = document.getElementById('customerName').value;
+            if (name) {
+                let newCustomer = {
+                    name,
+                    address: "",
+                    phone: "",
+                    device: "",
+                    purchaseDate: "",
+                    candles: Array(7).fill(Array(20).fill("")),
+                    notes: "",
+                    price: ""
+                };
+                customers.push(newCustomer);
+                localStorage.setItem('customers', JSON.stringify(customers));
+                displayCustomers();
+                document.getElementById('customerName').value = "";
+            }
+        }
+
+        function displayCustomers(filteredCustomers = customers) {
+            let customerList = document.getElementById('customerList');
+            customerList.innerHTML = "";
+            filteredCustomers.forEach((customer, index) => {
+                let div = document.createElement('div');
+                div.innerHTML = `${customer.name} <button class="delete-btn" onclick="deleteCustomer(${index})">🗑️</button>`;
+                div.onclick = () => showDetails(index);
+                customerList.appendChild(div);
+            });
+        }
+
+        function deleteCustomer(index) {
+            customers.splice(index, 1);
+            localStorage.setItem('customers', JSON.stringify(customers));
+            displayCustomers();
+        }
+
+        function showDetails(index) {
+            let customer = customers[index];
+            let candleInputs = "";
+            customer.candles.forEach((candle, candleIndex) => {
+                candleInputs += `<p><strong>شمعة ${candleIndex + 1}:</strong>`;
+                candle.forEach((value, valueIndex) => {
+                    candleInputs += `<input type="text" id="candle${candleIndex}_${valueIndex}" value="${value}">`;
+                });
+                candleInputs += "</p>";
+            });
+
+            document.getElementById('customerDetails').innerHTML = `
+                <p><strong>الاسم:</strong> ${customer.name}</p>
+                <p><strong>العنوان:</strong> <input type="text" id="customerAddress" value="${customer.address}"></p>
+                <p><strong>التليفون:</strong> <input type="text" id="customerPhone" value="${customer.phone}"></p>
+                <p><strong>نوع الجهاز:</strong> <input type="text" id="customerDevice" value="${customer.device}"></p>
+                <p><strong>تاريخ الشراء:</strong> <input type="text" id="purchaseDate" value="${customer.purchaseDate}"></p>
+                ${candleInputs}
+                <p><strong>الملاحظات:</strong> <input type="text" id="notes" value="${customer.notes}"></p>
+                <p><strong>السعر:</strong> <input type="text" id="price" value="${customer.price}"></p>
+                <button onclick="saveDetails(${index})">حفظ</button>
+            `;
+        }
+
+        function saveDetails(index) {
+            customers[index].address = document.getElementById('customerAddress').value;
+            customers[index].phone = document.getElementById('customerPhone').value;
+            customers[index].device = document.getElementById('customerDevice').value;
+            customers[index].purchaseDate = document.getElementById('purchaseDate').value;
+            customers[index].notes = document.getElementById('notes').value;
+            customers[index].price = document.getElementById('price').value;
+            
+            customers[index].candles.forEach((_, candleIndex) => {
+                customers[index].candles[candleIndex] = Array.from({ length: 20 }, (_, valueIndex) => 
+                    document.getElementById(`candle${candleIndex}_${valueIndex}`).value
+                );
+            });
+            
+            localStorage.setItem('customers', JSON.stringify(customers));
+            alert("تم حفظ البيانات بنجاح!");
+        }
+
+        function closeDetails() {
+            document.getElementById('customerDetails').innerHTML = "";
+        }
+
+        function searchCustomer() {
+            let query = document.getElementById('searchBox').value.toLowerCase();
+            let filtered = customers.filter(customer => customer.name.toLowerCase().includes(query));
+            displayCustomers(filtered);
+        }
+
+        displayCustomers();
+    </script>
+</body>
+</html>
